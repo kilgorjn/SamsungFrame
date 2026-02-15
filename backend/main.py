@@ -27,7 +27,7 @@ from thumbnail_cache import thumbnail_cache
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.DEBUG,  # Changed to DEBUG to see WebSocket events
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
@@ -301,12 +301,19 @@ async def delete_artwork(content_id: str):
     """
     try:
         # Check if this is the currently displayed artwork
-        current = tv_client.get_current_artwork()
-        if current.get("content_id") == content_id:
-            raise HTTPException(
-                status_code=400,
-                detail="Cannot delete currently displayed artwork. Please select a different artwork first."
-            )
+        # (gracefully handle if we can't get current artwork due to WebSocket issues)
+        try:
+            current = tv_client.get_current_artwork()
+            if current.get("content_id") == content_id:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Cannot delete currently displayed artwork. Please select a different artwork first."
+                )
+        except HTTPException:
+            raise  # Re-raise the 400 error if it's the current artwork
+        except Exception as e:
+            # If we can't check current artwork (e.g., WebSocket disconnect), log and continue
+            logger.warning(f"Could not verify current artwork before deletion (will proceed): {e}")
 
         result = tv_client.delete_artwork(content_id)
 

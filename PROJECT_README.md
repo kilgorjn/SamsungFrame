@@ -1,172 +1,318 @@
-# Samsung Frame Art Controller - Setup Guide
+# Samsung Frame Art Controller
 
-A full-stack web application to manage artwork on your Samsung Frame TV.
+A full-stack web application to manage artwork on your Samsung Frame TV. Control what's displayed, upload new artwork, delete unwanted images, and browse your entire collection from a web interface.
 
 ## Architecture
 
-- **Backend**: FastAPI REST API (Python)
+- **Backend**: FastAPI REST API (Python 3.11)
 - **Frontend**: Vue 3 with Vite
 - **TV Communication**: WebSocket via `samsungtvws` library
+- **Deployment**: Single Docker container with multi-stage build
+- **Caching**: Two-level caching (in-memory artwork list + persistent disk-based thumbnails)
 
-## Prerequisites
+## Quick Start
 
-- Python 3.9+
-- Node.js 18+
-- Samsung Frame TV on the same network
+See [DOCKER_README.md](DOCKER_README.md) for complete Docker setup instructions.
 
-## Setup Instructions
-
-### 1. Backend Setup
-
+**TL;DR:**
 ```bash
-cd backend
+# Copy environment template and configure your TV IP
+cp .env.example .env
+# Edit .env with your TV's IP address
 
-# Install dependencies (make sure samsungtvws is available from ../samsung-tv-ws-api)
-pip install -r requirements.txt
+# Build and run
+docker-compose up -d
 
-# Configure environment (edit .env if needed)
-# TV_IP is already set to 192.168.86.25
-
-# Start the backend server
-python main.py
+# Access the web interface
+open http://localhost:8000
 ```
-
-The backend will start on `http://localhost:8000`
-
-**Swagger API Documentation**: http://localhost:8000/docs
-
-### 2. Frontend Setup
-
-```bash
-cd frontend
-
-# Install dependencies
-npm install
-
-# Start development server
-npm run dev
-```
-
-The frontend will start on `http://localhost:5173`
 
 ## Features
 
 ### ✅ View Current Artwork
 - See which artwork is currently displayed on your TV
-- View thumbnail (for uploaded content)
-- See metadata (matte style, type, etc.)
+- Green border and ★ star indicator on current artwork
+- Real-time updates when artwork changes
 
 ### ✅ Browse Art Gallery
-- View all artwork available on your TV
-- Filter by type (Uploaded vs Art Store)
-- Thumbnails for user-uploaded content
-- Click to select and display artwork
+- View all artwork available on your TV (uploaded + Art Store + Ambient)
+- Filter by type: All, Uploaded Only, or Art Store Only
+- Thumbnails for user-uploaded content (DRM prevents Art Store thumbnails)
+- Click any thumbnail to select it (displays when TV enters art mode)
+- Visual feedback with "Selecting..." overlay during artwork changes
 
 ### ✅ Upload New Artwork
 - Upload images from your computer
-- Choose matte style (shadowbox, modern, etc.)
-- Automatic refresh of gallery after upload
+- Choose matte style (shadowbox, modern, etc.) for both landscape and portrait
+- Automatic gallery refresh after upload
+- Thumbnails automatically cached for future viewing
+
+### ✅ Delete Artwork
+- Delete individual artwork with confirmation prompt
+- Cannot delete currently displayed artwork (protection)
+- Multi-select mode for batch deletion
+- Shows success/failure results for each deletion
+
+### ✅ Multi-Select Deletion
+- Click "Select Multiple" to enter selection mode
+- Check multiple artworks to delete in one operation
+- Current artwork is protected and cannot be selected
+- Batch delete with detailed success/failure reporting
+
+### ✅ Loading States & Visual Feedback
+- "Selecting..." overlay when changing artwork
+- Disabled state on other thumbnails during selection
+- Prevents accidental double-clicks
+- Clear visual feedback for all operations
 
 ### ✅ TV Status
-- Connection status
-- Power state
+- Connection status indicator
+- Power state monitoring
 - Art mode status
-- API version
+- API version detection
+
+### ✅ Persistent Thumbnail Caching
+- Thumbnails stored in Docker volume (`/app/data/thumbnails`)
+- Survives container restarts
+- Background preloading on startup (fetches all thumbnails)
+- Cache automatically cleaned when artwork is deleted
+
+## Content Types
+
+The TV organizes artwork into three types:
+
+- **Uploaded** (`mobile`): Images you've uploaded from your phone or computer
+- **Art Store** (`server`/`artstore`): Samsung Art Store purchased/subscribed content
+- **Ambient** (`ambient`): Pre-installed ambient mode content
+
+**Note**: Art Store content is DRM-protected and cannot be downloaded. Only user-uploaded artwork has thumbnails available.
 
 ## API Endpoints
 
 ### TV Status
-- `GET /api/health` - Health check
-- `GET /api/tv/status` - TV power and art mode status
-- `GET /api/tv/settings` - Brightness and color temperature
+- `GET /api/health` - Health check and TV connection status
+- `GET /api/tv/status` - TV power state and art mode status
+- `GET /api/tv/settings` - Brightness and color temperature settings
 
 ### Artwork Management
-- `GET /api/art/current` - Get current artwork
-- `GET /api/art/list` - List all artwork (cached)
-- `POST /api/art/select` - Change displayed artwork
-- `GET /api/art/thumbnail/{id}` - Download thumbnail
-- `POST /api/art/upload` - Upload new artwork
+- `GET /api/art/current` - Get currently displayed artwork
+- `GET /api/art/list` - List all available artwork (cached, deduplicated)
+- `POST /api/art/select` - Select artwork (displays when TV enters art mode)
+- `GET /api/art/thumbnail/{id}` - Download artwork thumbnail (cached)
+- `POST /api/art/upload` - Upload new artwork with matte selection
+- `DELETE /api/art/{id}` - Delete artwork (protected if currently displayed)
 
-## Notes
+### Debug
+- `GET /api/art/list/raw` - View raw artwork data from TV API (for debugging)
 
-### Art Store Content
-Samsung Art Store content **cannot be downloaded** due to DRM/licensing restrictions. Thumbnails are only available for user-uploaded artwork.
+**API Documentation**: http://localhost:8000/docs (Swagger UI)
 
-### Caching
-The artwork list is cached for 5 minutes to improve performance. The cache is automatically invalidated when new artwork is uploaded.
+## Configuration
 
-### Network
-Both the backend server and your browser must be able to reach the Samsung TV on the network.
+Copy `.env.example` to `.env` and configure:
 
-## Troubleshooting
+```bash
+# Your Samsung Frame TV's IP address
+TV_IP=192.168.1.100
 
-### Backend won't start
-- Check that `samsungtvws` is installed
-- Verify the path to `samsung-tv-ws-api` in `samsung_tv_client.py` line 8
-- Check `.env` file has correct TV IP address
+# Connection settings
+TV_PORT=8001
+TV_TIMEOUT=30
 
-### Can't connect to TV
-- Ensure TV is on the same network
-- Verify TV IP address in `.env`
-- Check TV is powered on
+# Cache TTL in seconds (artwork list cache)
+CACHE_TTL=300
 
-### Frontend can't reach backend
-- Ensure backend is running on port 8000
-- Check browser console for CORS errors
-- Verify Vite proxy configuration
+# API server configuration
+API_HOST=0.0.0.0
+API_PORT=8000
+```
 
-### Upload fails
-- Check file is a valid image format
-- Ensure file isn't too large
-- Check backend logs for errors
+## Docker Deployment
 
-## Development
+The application uses a multi-stage Docker build:
+
+1. **Frontend build stage**: Node 20 Alpine compiles Vue 3 app
+2. **Runtime stage**: Python 3.11 slim serves both API and static frontend
+3. **Volume**: Persistent thumbnail cache at `/app/data/thumbnails`
+
+```bash
+# Build
+docker-compose build
+
+# Run in background
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Stop
+docker-compose down
+
+# Stop and remove volumes (clears thumbnail cache)
+docker-compose down -v
+```
+
+## Local Development (without Docker)
+
+If you want to develop without Docker:
 
 ### Backend
 ```bash
 cd backend
+pip install -r requirements.txt
+
+# Install samsungtvws from the samsung-tv-ws-api directory
+pip install -e ../samsung-tv-ws-api
+
+# Configure .env file
+cp ../.env.example .env
+# Edit .env with your TV IP
+
 # Run with auto-reload
 uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ```
 
+Backend runs at: http://localhost:8000
+
 ### Frontend
 ```bash
 cd frontend
+npm install
+
 # Development server with HMR
 npm run dev
-
-# Build for production
-npm run build
 ```
+
+Frontend runs at: http://localhost:5173
+
+The Vite dev server proxies `/api` requests to the backend at `localhost:8000`.
 
 ## Project Structure
 
 ```
 SamsungFrame/
+├── .env.example            # Environment template
+├── .gitignore             # Git exclusions
+├── Dockerfile             # Multi-stage Docker build
+├── docker-compose.yml     # Docker Compose configuration
+├── README.md              # Main README (Docker setup)
+├── PROJECT_README.md      # This file (detailed docs)
+├── DOCKER_README.md       # Docker-specific setup guide
+│
 ├── backend/
-│   ├── main.py              # FastAPI app
-│   ├── config.py            # Configuration
-│   ├── models.py            # Pydantic models
-│   ├── samsung_tv_client.py # TV API wrapper
-│   ├── cache.py             # Caching logic
-│   ├── requirements.txt     # Python dependencies
-│   └── .env                 # Environment config
+│   ├── main.py              # FastAPI application
+│   ├── config.py            # Configuration from .env
+│   ├── models.py            # Pydantic request/response models
+│   ├── samsung_tv_client.py # Samsung TV API wrapper
+│   ├── cache.py             # In-memory artwork list cache
+│   ├── thumbnail_cache.py   # Persistent disk-based thumbnail cache
+│   └── requirements.txt     # Python dependencies
+│
 ├── frontend/
-│   ├── src/
-│   │   ├── App.vue          # Main component
-│   │   ├── main.js          # Entry point
-│   │   ├── api/
-│   │   │   └── samsung-api.js  # API client
-│   │   ├── components/
-│   │   │   ├── TvStatus.vue
-│   │   │   ├── CurrentArtwork.vue
-│   │   │   ├── ArtGallery.vue
-│   │   │   ├── ArtworkCard.vue
-│   │   │   └── UploadForm.vue
-│   │   └── assets/
-│   │       └── main.css     # Styles
 │   ├── index.html
 │   ├── package.json
-│   └── vite.config.js
-└── frame-test1.py          # Original test script
+│   ├── vite.config.js       # Vite config with API proxy
+│   └── src/
+│       ├── main.js          # Vue app entry point
+│       ├── App.vue          # Root component
+│       ├── api/
+│       │   └── samsung-api.js  # Axios-based API client
+│       ├── components/
+│       │   ├── TvStatus.vue       # Connection status indicator
+│       │   ├── CurrentArtwork.vue # Current artwork display
+│       │   ├── ArtGallery.vue     # Gallery grid with filtering
+│       │   ├── ArtworkCard.vue    # Individual artwork card
+│       │   └── UploadForm.vue     # File upload interface
+│       └── assets/
+│           └── main.css     # Global styles
 ```
+
+## Caching Strategy
+
+### Artwork List Cache (In-Memory)
+- TTL: 5 minutes (configurable via `CACHE_TTL`)
+- Invalidated on: Upload, Delete
+- Improves performance by reducing TV API calls
+
+### Thumbnail Cache (Persistent Disk)
+- Location: Docker volume at `/app/data/thumbnails`
+- Format: `{content_id}.jpg`
+- Persists across container restarts
+- Automatically cleaned when artwork is deleted
+- Background preload on startup (fetches all user-uploaded thumbnails)
+
+### Deduplication
+- Samsung TV API returns same artwork in multiple categories
+- Backend deduplicates by `content_id` before caching
+- Prevents duplicate cards in gallery
+
+## Notes & Limitations
+
+### Art Store Content
+Samsung Art Store content **cannot be downloaded** due to DRM/licensing restrictions. The API returns thumbnails only for user-uploaded artwork (`mobile` type). Art Store cards show "Art Store" placeholder instead of thumbnails.
+
+### Current Artwork Protection
+You cannot delete artwork that's currently being displayed. The UI disables the delete button and shows a ★ indicator. The backend also validates and returns a 400 error if you attempt to delete current artwork.
+
+### Network Requirements
+- Backend (Docker container) must reach the TV on the network
+- On macOS/Windows, Docker runs in a VM, so `network_mode: host` doesn't work
+- Uses standard port mapping: `8000:8000`
+
+### Background Thumbnail Preload
+On startup, the backend automatically fetches and caches thumbnails for all user-uploaded artwork. This may take a few seconds depending on how many images you have. Check the Docker logs to see progress:
+
+```bash
+docker-compose logs -f | grep "Cached thumbnail"
+```
+
+## Troubleshooting
+
+### Container won't start
+```bash
+# Check logs
+docker-compose logs
+
+# Verify .env file exists and has correct TV_IP
+cat .env
+
+# Rebuild from scratch
+docker-compose down
+docker-compose build --no-cache
+docker-compose up -d
+```
+
+### Can't connect to TV
+- Ensure TV is on the same network as your Docker host
+- Verify TV IP address in `.env`
+- Check TV is powered on
+- Test connection: `ping <TV_IP>`
+
+### Thumbnails not loading
+- Art Store content doesn't have thumbnails (DRM protected)
+- Check Docker volume exists: `docker volume ls | grep thumbnail`
+- Check cache directory: `docker-compose exec samsung-frame-controller ls -la /app/data/thumbnails`
+- View logs for thumbnail fetch errors: `docker-compose logs | grep thumbnail`
+
+### Frontend shows blank/white page
+- Check backend is running: `curl http://localhost:8000/api/health`
+- View browser console for errors (F12)
+- Rebuild frontend: `docker-compose build --no-cache`
+
+### Upload fails
+- Check file is a valid image format (JPG, PNG, etc.)
+- Ensure file isn't too large (TV may have size limits)
+- Check backend logs: `docker-compose logs | grep -i error`
+
+## Contributing
+
+When making changes:
+
+1. Test locally with Docker: `docker-compose up --build`
+2. Ensure all features work (upload, delete, select, multi-select)
+3. Check browser console for errors
+4. Update this README if adding new features
+
+## License
+
+This project interfaces with Samsung Frame TVs using the community-maintained `samsungtvws` library. Not affiliated with or endorsed by Samsung.

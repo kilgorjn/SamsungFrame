@@ -90,7 +90,7 @@ class SamsungTVClient:
 
     def select_artwork(self, content_id: str, category_id: Optional[str] = None) -> None:
         """
-        Select and display artwork.
+        Select artwork (will display next time TV enters art mode).
 
         Args:
             content_id: ID of the artwork to display
@@ -98,7 +98,7 @@ class SamsungTVClient:
         """
         try:
             tv = self._get_tv()
-            tv.art().select_image(content_id, category=category_id, show=True)
+            tv.art().select_image(content_id, category=category_id, show=False)
         except Exception as e:
             logger.error(f"Error selecting artwork {content_id}: {e}")
             raise

@@ -9,6 +9,9 @@
 !frontend/src/assets/*.jpeg
 !frontend/src/assets/*.png
 
+# TV authentication tokens
+.tv_token
+
 # Python
 __pycache__/
 *.py[cod]
