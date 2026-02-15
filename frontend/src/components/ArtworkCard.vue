@@ -27,7 +27,7 @@
         :src="thumbnailUrl"
         :alt="artwork.content_id"
       />
-      <div v-else style="height: 200px; background: #f5f5f5; display: flex; align-items: center; justify-content: center; color: #999;">
+      <div v-else style="width: 100%; height: 150px; max-height: 300px; background: #f5f5f5; display: flex; align-items: center; justify-content: center; color: #999;">
         <span v-if="loading">Loading...</span>
         <span v-else>{{ ['artstore', 'server', 'ambient'].includes(artwork.content_type) ? 'Art Store' : 'No preview' }}</span>
       </div>
@@ -39,6 +39,9 @@
       </div>
       <div v-if="artwork.file_name" style="font-size: 11px; color: #666; margin-top: 2px; font-family: monospace;">
         {{ artwork.content_id }}
+      </div>
+      <div v-if="artwork.width && artwork.height" style="font-size: 11px; color: #888; margin-top: 2px;">
+        {{ artwork.width }} × {{ artwork.height }}
       </div>
       <div class="art-card-type">
         <span :class="['badge', ['artstore', 'server', 'ambient'].includes(artwork.content_type) ? 'badge-artstore' : 'badge-mobile']">

@@ -13,6 +13,9 @@ class ArtworkInfo(BaseModel):
     file_name: Optional[str] = None
     matte_id: Optional[str] = None
     portrait_matte_id: Optional[str] = None
+    width: Optional[int] = None
+    height: Optional[int] = None
+    image_date: Optional[str] = None
 
 
 class ArtworkListResponse(BaseModel):
