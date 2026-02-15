@@ -167,16 +167,16 @@ automation:
     action:
       - service: rest_command.samsung_frame_color_temp
         data:
-          temp: "3"  # Warmer
+          temp: "5"  # Warmer (removes blue light for nighttime)
 
-  - alias: "Cool Frame TV During Day"
+  - alias: "Neutral Frame TV During Day"
     trigger:
       - platform: time
         at: "08:00:00"
     action:
       - service: rest_command.samsung_frame_color_temp
         data:
-          temp: "-2"  # Cooler
+          temp: "0"  # Neutral/cooler (more blue light for daytime)
 ```
 
 ### Available REST Endpoints for Home Assistant
