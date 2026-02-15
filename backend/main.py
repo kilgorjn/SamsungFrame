@@ -19,6 +19,10 @@ from models import (
     SelectArtworkRequest,
     TvStatusResponse,
     TvSettingsResponse,
+    MatteListResponse,
+    MatteType,
+    MatteColor,
+    ChangeMatteRequest,
     HealthResponse,
 )
 from samsung_tv_client import tv_client
@@ -195,10 +199,10 @@ async def get_artwork_list():
 
 @app.post("/api/art/select")
 async def select_artwork(request: SelectArtworkRequest):
-    """Change displayed artwork."""
+    """Select artwork (queue or display immediately based on 'show' parameter)."""
     try:
-        tv_client.select_artwork(request.content_id, request.category_id)
-        return {"success": True, "content_id": request.content_id}
+        tv_client.select_artwork(request.content_id, request.category_id, request.show)
+        return {"success": True, "content_id": request.content_id, "show": request.show}
     except Exception as e:
         logger.error(f"Error selecting artwork: {e}")
         raise HTTPException(status_code=500, detail="Could not select artwork")
@@ -351,6 +355,40 @@ async def get_tv_settings():
     except Exception as e:
         logger.error(f"Error getting TV settings: {e}")
         raise HTTPException(status_code=503, detail="Could not get TV settings")
+
+
+@app.get("/api/art/mattes", response_model=MatteListResponse)
+async def get_matte_list():
+    """Get available matte types and colors."""
+    try:
+        matte_types, matte_colors = tv_client.get_matte_list()
+
+        return MatteListResponse(
+            matte_types=[MatteType(**mt) for mt in matte_types],
+            matte_colors=[MatteColor(**mc) for mc in matte_colors]
+        )
+    except Exception as e:
+        logger.error(f"Error getting matte list: {e}")
+        raise HTTPException(status_code=503, detail="Could not get matte list")
+
+
+@app.post("/api/art/matte")
+async def change_matte(request: ChangeMatteRequest):
+    """Change the matte on artwork."""
+    try:
+        tv_client.change_matte(
+            request.content_id,
+            request.matte_id,
+            request.portrait_matte_id
+        )
+        return {
+            "success": True,
+            "content_id": request.content_id,
+            "matte_id": request.matte_id
+        }
+    except Exception as e:
+        logger.error(f"Error changing matte: {e}")
+        raise HTTPException(status_code=500, detail=f"Could not change matte: {str(e)}")
 
 
 # Mount static files for frontend (if available)

@@ -40,10 +40,11 @@ export const samsungApi = {
     return data;
   },
 
-  async selectArtwork(contentId, categoryId = null) {
+  async selectArtwork(contentId, categoryId = null, show = false) {
     const { data } = await api.post('/art/select', {
       content_id: contentId,
       category_id: categoryId,
+      show: show,
     });
     return data;
   },
@@ -79,6 +80,20 @@ export const samsungApi = {
 
   async deleteArtwork(contentId) {
     const { data } = await api.delete(`/art/${contentId}`);
+    return data;
+  },
+
+  async getMatteList() {
+    const { data } = await api.get('/art/mattes');
+    return data;
+  },
+
+  async changeMatte(contentId, matteId, portraitMatteId = null) {
+    const { data } = await api.post('/art/matte', {
+      content_id: contentId,
+      matte_id: matteId,
+      portrait_matte_id: portraitMatteId,
+    });
     return data;
   },
 };

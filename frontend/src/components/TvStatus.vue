@@ -19,6 +19,9 @@
       <p v-if="status.api_version">
         <strong>API Version:</strong> {{ status.api_version }}
       </p>
+      <p>
+        <strong>Optimal Dimensions:</strong> 3840 × 2160 (16:9)
+      </p>
     </div>
     <div v-else-if="error" class="error">{{ error }}</div>
     <div v-else class="loading">Loading TV status...</div>

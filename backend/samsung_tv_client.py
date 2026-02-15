@@ -88,17 +88,19 @@ class SamsungTVClient:
             logger.error(f"Error getting available artwork: {e}")
             raise
 
-    def select_artwork(self, content_id: str, category_id: Optional[str] = None) -> None:
+    def select_artwork(self, content_id: str, category_id: Optional[str] = None, show: bool = False) -> None:
         """
-        Select artwork (will display next time TV enters art mode).
+        Select artwork.
 
         Args:
             content_id: ID of the artwork to display
             category_id: Optional category ID
+            show: If True, force TV into art mode and display immediately.
+                  If False, queue artwork for next time TV enters art mode.
         """
         try:
             tv = self._get_tv()
-            tv.art().select_image(content_id, category=category_id, show=False)
+            tv.art().select_image(content_id, category=category_id, show=show)
         except Exception as e:
             logger.error(f"Error selecting artwork {content_id}: {e}")
             raise
@@ -215,6 +217,39 @@ class SamsungTVClient:
             return result
         except Exception as e:
             logger.error(f"Error deleting artwork {content_id}: {e}")
+            raise
+
+    def get_matte_list(self) -> tuple[list[dict], list[dict]]:
+        """
+        Get available matte types and colors.
+
+        Returns:
+            Tuple of (matte_types, matte_colors)
+        """
+        try:
+            tv = self._get_tv()
+            matte_types, matte_colors = tv.art().get_matte_list(include_colour=True)
+            logger.debug(f"Retrieved {len(matte_types)} matte types and {len(matte_colors)} colors")
+            return matte_types, matte_colors
+        except Exception as e:
+            logger.error(f"Error getting matte list: {e}")
+            raise
+
+    def change_matte(self, content_id: str, matte_id: str, portrait_matte_id: Optional[str] = None) -> None:
+        """
+        Change the matte on artwork.
+
+        Args:
+            content_id: ID of the artwork
+            matte_id: New matte ID (format: type_color, e.g., "shadowbox_polar")
+            portrait_matte_id: Optional portrait matte ID
+        """
+        try:
+            tv = self._get_tv()
+            tv.art().change_matte(content_id, matte_id, portrait_matte_id)
+            logger.info(f"Changed matte for {content_id} to {matte_id}")
+        except Exception as e:
+            logger.error(f"Error changing matte for {content_id}: {e}")
             raise
 
 
