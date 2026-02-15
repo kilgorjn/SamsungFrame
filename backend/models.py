@@ -96,6 +96,18 @@ class ChangeMatteRequest(BaseModel):
     portrait_matte_id: Optional[str] = None
 
 
+class SetBrightnessRequest(BaseModel):
+    """Model for set brightness request."""
+
+    value: str  # "0" to "10"
+
+
+class SetColorTemperatureRequest(BaseModel):
+    """Model for set color temperature request."""
+
+    value: str  # "-5" to "5"
+
+
 class HealthResponse(BaseModel):
     """Model for health check response."""
 

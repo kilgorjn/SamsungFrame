@@ -96,4 +96,18 @@ export const samsungApi = {
     });
     return data;
   },
+
+  async setBrightness(value) {
+    const { data } = await api.post('/art/brightness', {
+      value: String(value),
+    });
+    return data;
+  },
+
+  async setColorTemperature(value) {
+    const { data } = await api.post('/art/color-temperature', {
+      value: String(value),
+    });
+    return data;
+  },
 };

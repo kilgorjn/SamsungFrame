@@ -23,6 +23,8 @@ from models import (
     MatteType,
     MatteColor,
     ChangeMatteRequest,
+    SetBrightnessRequest,
+    SetColorTemperatureRequest,
     HealthResponse,
 )
 from samsung_tv_client import tv_client
@@ -389,6 +391,48 @@ async def change_matte(request: ChangeMatteRequest):
     except Exception as e:
         logger.error(f"Error changing matte: {e}")
         raise HTTPException(status_code=500, detail=f"Could not change matte: {str(e)}")
+
+
+@app.post("/api/art/brightness")
+async def set_brightness(request: SetBrightnessRequest):
+    """Set artwork brightness level (0-10)."""
+    try:
+        # Validate brightness value
+        brightness_int = int(request.value)
+        if not 0 <= brightness_int <= 10:
+            raise HTTPException(status_code=400, detail="Brightness must be between 0 and 10")
+
+        tv_client.set_brightness(request.value)
+        return {
+            "success": True,
+            "brightness": request.value
+        }
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Brightness must be a number")
+    except Exception as e:
+        logger.error(f"Error setting brightness: {e}")
+        raise HTTPException(status_code=500, detail=f"Could not set brightness: {str(e)}")
+
+
+@app.post("/api/art/color-temperature")
+async def set_color_temperature(request: SetColorTemperatureRequest):
+    """Set artwork color temperature (-5 to 5)."""
+    try:
+        # Validate color temperature value
+        temp_int = int(request.value)
+        if not -5 <= temp_int <= 5:
+            raise HTTPException(status_code=400, detail="Color temperature must be between -5 and 5")
+
+        tv_client.set_color_temperature(request.value)
+        return {
+            "success": True,
+            "color_temperature": request.value
+        }
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Color temperature must be a number")
+    except Exception as e:
+        logger.error(f"Error setting color temperature: {e}")
+        raise HTTPException(status_code=500, detail=f"Could not set color temperature: {str(e)}")
 
 
 # Mount static files for frontend (if available)

@@ -35,6 +35,48 @@
         <p v-if="showMessage" class="success" style="margin-top: 8px;">{{ showMessage }}</p>
       </div>
 
+      <!-- Brightness Control -->
+      <div style="margin-top: 24px; padding-top: 24px; border-top: 1px solid #e0e0e0;">
+        <h3 style="margin-bottom: 16px;">Brightness</h3>
+        <div style="display: flex; align-items: center; gap: 16px; max-width: 400px;">
+          <span style="font-size: 20px;">🌙</span>
+          <input
+            type="range"
+            v-model="brightness"
+            @input="onBrightnessChange"
+            min="0"
+            max="10"
+            step="1"
+            style="flex: 1; height: 6px; cursor: pointer;"
+          />
+          <span style="font-size: 20px;">☀️</span>
+          <span style="min-width: 30px; text-align: center; font-weight: 600;">{{ brightness }}</span>
+        </div>
+        <p v-if="brightnessMessage" class="success" style="margin-top: 8px;">{{ brightnessMessage }}</p>
+        <p v-if="brightnessError" class="error" style="margin-top: 8px;">{{ brightnessError }}</p>
+      </div>
+
+      <!-- Color Temperature Control -->
+      <div style="margin-top: 24px; padding-top: 24px; border-top: 1px solid #e0e0e0;">
+        <h3 style="margin-bottom: 16px;">Color Temperature</h3>
+        <div style="display: flex; align-items: center; gap: 16px; max-width: 400px;">
+          <span style="font-size: 20px;">❄️</span>
+          <input
+            type="range"
+            v-model="colorTemp"
+            @input="onColorTempChange"
+            min="-5"
+            max="5"
+            step="1"
+            style="flex: 1; height: 6px; cursor: pointer;"
+          />
+          <span style="font-size: 20px;">🔥</span>
+          <span style="min-width: 30px; text-align: center; font-weight: 600;">{{ colorTemp }}</span>
+        </div>
+        <p v-if="colorTempMessage" class="success" style="margin-top: 8px;">{{ colorTempMessage }}</p>
+        <p v-if="colorTempError" class="error" style="margin-top: 8px;">{{ colorTempError }}</p>
+      </div>
+
       <!-- Matte Picker -->
       <div v-if="currentArt && matteTypes && matteColors" style="margin-top: 24px; padding-top: 24px; border-top: 1px solid #e0e0e0;">
         <h3
@@ -141,6 +183,18 @@ export default {
     const matteMessage = ref(null);
     const matteError = ref(null);
 
+    // Brightness state
+    const brightness = ref(5);
+    const brightnessMessage = ref(null);
+    const brightnessError = ref(null);
+    let brightnessTimeout = null;
+
+    // Color temperature state
+    const colorTemp = ref(0);
+    const colorTempMessage = ref(null);
+    const colorTempError = ref(null);
+    let colorTempTimeout = null;
+
     const loadCurrentArtwork = async () => {
       try {
         currentArt.value = await samsungApi.getCurrentArtwork();
@@ -237,9 +291,81 @@ export default {
       }
     };
 
+    const loadBrightness = async () => {
+      try {
+        const settings = await samsungApi.getTvSettings();
+        if (settings.brightness) {
+          brightness.value = parseInt(settings.brightness);
+        }
+      } catch (err) {
+        console.error('Failed to load brightness:', err);
+      }
+    };
+
+    const onBrightnessChange = () => {
+      // Clear any existing timeout
+      if (brightnessTimeout) {
+        clearTimeout(brightnessTimeout);
+      }
+
+      brightnessMessage.value = null;
+      brightnessError.value = null;
+
+      // Debounce: wait 500ms after user stops dragging before sending request
+      brightnessTimeout = setTimeout(async () => {
+        try {
+          await samsungApi.setBrightness(brightness.value);
+          brightnessMessage.value = `Brightness set to ${brightness.value}`;
+          setTimeout(() => {
+            brightnessMessage.value = null;
+          }, 2000);
+        } catch (err) {
+          brightnessError.value = 'Failed to set brightness';
+          console.error(err);
+        }
+      }, 500);
+    };
+
+    const loadColorTemperature = async () => {
+      try {
+        const settings = await samsungApi.getTvSettings();
+        if (settings.color_temperature) {
+          colorTemp.value = parseInt(settings.color_temperature);
+        }
+      } catch (err) {
+        console.error('Failed to load color temperature:', err);
+      }
+    };
+
+    const onColorTempChange = () => {
+      // Clear any existing timeout
+      if (colorTempTimeout) {
+        clearTimeout(colorTempTimeout);
+      }
+
+      colorTempMessage.value = null;
+      colorTempError.value = null;
+
+      // Debounce: wait 500ms after user stops dragging before sending request
+      colorTempTimeout = setTimeout(async () => {
+        try {
+          await samsungApi.setColorTemperature(colorTemp.value);
+          colorTempMessage.value = `Color temperature set to ${colorTemp.value}`;
+          setTimeout(() => {
+            colorTempMessage.value = null;
+          }, 2000);
+        } catch (err) {
+          colorTempError.value = 'Failed to set color temperature';
+          console.error(err);
+        }
+      }, 500);
+    };
+
     onMounted(async () => {
       await loadCurrentArtwork();
       await loadMatteList();
+      await loadBrightness();
+      await loadColorTemperature();
     });
 
     return {
@@ -249,6 +375,14 @@ export default {
       showing,
       showMessage,
       showOnTv,
+      brightness,
+      brightnessMessage,
+      brightnessError,
+      onBrightnessChange,
+      colorTemp,
+      colorTempMessage,
+      colorTempError,
+      onColorTempChange,
       matteExpanded,
       matteTypes,
       matteColors,
@@ -265,3 +399,6 @@ export default {
   },
 };
 </script>
+
+<style scoped>
+</style>

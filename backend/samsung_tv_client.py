@@ -26,7 +26,11 @@ class SamsungTVClient:
     def _get_tv(self) -> SamsungTVWS:
         """Get or create TV connection."""
         if self._tv is None:
-            self._tv = SamsungTVWS(settings.tv_ip, timeout=settings.tv_timeout)
+            self._tv = SamsungTVWS(
+                settings.tv_ip,
+                port=settings.tv_port,
+                timeout=settings.tv_timeout
+            )
         return self._tv
 
     def is_supported(self) -> bool:
@@ -198,6 +202,36 @@ class SamsungTVClient:
         except Exception as e:
             logger.error(f"Error getting color temperature: {e}")
             return None
+
+    def set_brightness(self, value: str) -> None:
+        """
+        Set brightness level.
+
+        Args:
+            value: Brightness level from "0" to "10"
+        """
+        try:
+            tv = self._get_tv()
+            tv.art().set_brightness(value)
+            logger.info(f"Set brightness to {value}")
+        except Exception as e:
+            logger.error(f"Error setting brightness: {e}")
+            raise
+
+    def set_color_temperature(self, value: str) -> None:
+        """
+        Set color temperature.
+
+        Args:
+            value: Color temperature from "-5" to "5"
+        """
+        try:
+            tv = self._get_tv()
+            tv.art().set_color_temperature(value)
+            logger.info(f"Set color temperature to {value}")
+        except Exception as e:
+            logger.error(f"Error setting color temperature: {e}")
+            raise
 
     def delete_artwork(self, content_id: str) -> bool:
         """
