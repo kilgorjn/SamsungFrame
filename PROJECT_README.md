@@ -107,6 +107,118 @@ The TV organizes artwork into three types:
 
 **API Documentation**: http://localhost:8000/docs (Swagger UI)
 
+## Home Assistant Integration
+
+The REST API can be called directly from Home Assistant to control brightness, color temperature, and artwork selection.
+
+### Brightness Control
+
+Control brightness (0-10) based on time of day or other automations:
+
+```yaml
+# configuration.yaml
+rest_command:
+  samsung_frame_brightness:
+    url: "http://YOUR_SERVER_IP:8000/api/art/brightness"
+    method: POST
+    headers:
+      Content-Type: "application/json"
+    payload: '{"value": "{{ brightness }}"}'
+
+  samsung_frame_color_temp:
+    url: "http://YOUR_SERVER_IP:8000/api/art/color-temperature"
+    method: POST
+    headers:
+      Content-Type: "application/json"
+    payload: '{"value": "{{ temp }}"}'
+```
+
+### Example Automations
+
+**Dim at sunset:**
+```yaml
+automation:
+  - alias: "Dim Frame TV at Night"
+    trigger:
+      - platform: sun
+        event: sunset
+    action:
+      - service: rest_command.samsung_frame_brightness
+        data:
+          brightness: "2"
+
+  - alias: "Brighten Frame TV at Sunrise"
+    trigger:
+      - platform: sun
+        event: sunrise
+    action:
+      - service: rest_command.samsung_frame_brightness
+        data:
+          brightness: "7"
+```
+
+**Adjust color temperature based on time:**
+```yaml
+automation:
+  - alias: "Warm Frame TV at Night"
+    trigger:
+      - platform: time
+        at: "21:00:00"
+    action:
+      - service: rest_command.samsung_frame_color_temp
+        data:
+          temp: "3"  # Warmer
+
+  - alias: "Cool Frame TV During Day"
+    trigger:
+      - platform: time
+        at: "08:00:00"
+    action:
+      - service: rest_command.samsung_frame_color_temp
+        data:
+          temp: "-2"  # Cooler
+```
+
+### Available REST Endpoints for Home Assistant
+
+| Endpoint | Method | Parameters | Description |
+|----------|--------|------------|-------------|
+| `/api/art/brightness` | POST | `{"value": "0-10"}` | Set brightness level |
+| `/api/art/color-temperature` | POST | `{"value": "-5 to 5"}` | Set color temperature |
+| `/api/art/select` | POST | `{"content_id": "...", "show": false}` | Change artwork |
+| `/api/art/list` | GET | - | Get all artwork (for dynamic selection) |
+| `/api/tv/status` | GET | - | Get TV status |
+| `/api/tv/settings` | GET | - | Get current brightness/color temp |
+
+### Advanced: Dynamic Artwork Selection
+
+You can create automations that change artwork based on conditions:
+
+```yaml
+rest_command:
+  samsung_frame_select_art:
+    url: "http://YOUR_SERVER_IP:8000/api/art/select"
+    method: POST
+    headers:
+      Content-Type: "application/json"
+    payload: '{"content_id": "{{ content_id }}", "show": false}'
+
+automation:
+  - alias: "Holiday Artwork"
+    trigger:
+      - platform: time
+        at: "00:00:00"
+    condition:
+      - condition: template
+        value_template: "{{ now().month == 12 and now().day >= 1 }}"
+    action:
+      - service: rest_command.samsung_frame_select_art
+        data:
+          content_id: "YOUR_HOLIDAY_ARTWORK_ID"
+```
+
+**Note:** Replace `YOUR_SERVER_IP` with your Docker host IP address (or hostname). Use port `8000` (or the `API_PORT` you configured).
+
 ## Configuration
 
 Copy `.env.example` to `.env` and configure:
