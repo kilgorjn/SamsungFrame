@@ -40,6 +40,7 @@ class SelectArtworkRequest(BaseModel):
 
     content_id: str
     category_id: Optional[str] = None
+    show: bool = False  # If True, force TV into art mode and display immediately
 
 
 class UploadArtworkRequest(BaseModel):
@@ -63,6 +64,36 @@ class TvSettingsResponse(BaseModel):
 
     brightness: Optional[str] = None
     color_temperature: Optional[str] = None
+
+
+class MatteType(BaseModel):
+    """Model for matte type."""
+
+    matte_type: str
+
+
+class MatteColor(BaseModel):
+    """Model for matte color."""
+
+    color: str
+    R: int
+    G: int
+    B: int
+
+
+class MatteListResponse(BaseModel):
+    """Model for available mattes response."""
+
+    matte_types: list[MatteType]
+    matte_colors: list[MatteColor]
+
+
+class ChangeMatteRequest(BaseModel):
+    """Model for change matte request."""
+
+    content_id: str
+    matte_id: str
+    portrait_matte_id: Optional[str] = None
 
 
 class HealthResponse(BaseModel):

@@ -83,8 +83,21 @@ export default {
 
     const filteredArtworks = computed(() => {
       if (!artworks.value) return [];
-      if (filter.value === 'all') return artworks.value;
-      return artworks.value.filter(art => art.content_type === filter.value);
+
+      let filtered = filter.value === 'all'
+        ? artworks.value
+        : artworks.value.filter(art => art.content_type === filter.value);
+
+      // Sort by upload date (newest first)
+      return filtered.slice().sort((a, b) => {
+        // Art without date goes to end
+        if (!a.image_date && !b.image_date) return 0;
+        if (!a.image_date) return 1;
+        if (!b.image_date) return -1;
+
+        // Descending order (newest first)
+        return b.image_date.localeCompare(a.image_date);
+      });
     });
 
     const uploadedCount = computed(() => {
