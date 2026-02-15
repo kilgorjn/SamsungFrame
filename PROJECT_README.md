@@ -264,6 +264,57 @@ docker-compose down
 docker-compose down -v
 ```
 
+### Pre-built Images (GitHub Container Registry)
+
+Docker images are automatically built and published via GitHub Actions on every push to `main`:
+
+**Pull the latest image:**
+```bash
+docker pull ghcr.io/OWNER/REPO:latest
+```
+
+**Portainer deployment:**
+1. Go to Portainer → Images → Pull Image
+2. Enter image name: `ghcr.io/OWNER/REPO:latest`
+3. Pull the image
+4. Go to Containers → Add Container
+5. Use image: `ghcr.io/OWNER/REPO:latest`
+6. Configure port mapping: `8000:8000`
+7. Add environment variables:
+   ```
+   TV_IP=192.168.1.100
+   TV_PORT=8001
+   TV_TIMEOUT=30
+   CACHE_TTL=300
+   API_HOST=0.0.0.0
+   API_PORT=8000
+   ```
+8. Add volume mapping: `/app/data/thumbnails` → Create new volume
+9. Set restart policy to "Always"
+10. Deploy container
+
+**Available tags:**
+- `latest` - Latest build from main branch
+- `main-<sha>` - Specific commit from main branch
+- `v1.0.0` - Semantic version tags (if using releases)
+
+**Note:** Replace `OWNER/REPO` with your GitHub username and repository name (e.g., `username/SamsungFrame`).
+
+### GitHub Actions CI/CD
+
+The project includes automated Docker image builds:
+
+**Workflow triggers:**
+- Push to `main` → Builds and pushes `latest` tag
+- Push tags `v*` → Builds and pushes semantic version tags
+- Pull requests → Builds only (does not push)
+
+**Multi-platform builds:**
+- `linux/amd64` (x86_64)
+- `linux/arm64` (ARM64/Apple Silicon)
+
+**View builds:** Go to your GitHub repository → Actions tab
+
 ## Local Development (without Docker)
 
 If you want to develop without Docker:
@@ -305,11 +356,16 @@ The Vite dev server proxies `/api` requests to the backend at `localhost:8000`.
 SamsungFrame/
 ├── .env.example            # Environment template
 ├── .gitignore             # Git exclusions
+├── .dockerignore          # Docker build exclusions
 ├── Dockerfile             # Multi-stage Docker build
 ├── docker-compose.yml     # Docker Compose configuration
 ├── README.md              # Main README (Docker setup)
 ├── PROJECT_README.md      # This file (detailed docs)
 ├── DOCKER_README.md       # Docker-specific setup guide
+│
+├── .github/
+│   └── workflows/
+│       └── docker-build.yml  # GitHub Actions CI/CD pipeline
 │
 ├── backend/
 │   ├── main.py              # FastAPI application
@@ -424,6 +480,32 @@ When making changes:
 2. Ensure all features work (upload, delete, select, multi-select)
 3. Check browser console for errors
 4. Update this README if adding new features
+
+### Updating Dependencies
+
+**Samsung TV API Library (`samsung-tv-ws-api`):**
+
+The Dockerfile pins to a specific commit for reproducible builds. To update:
+
+```bash
+# Navigate to the local clone
+cd /Users/jeff/VSCodeProjects/samsung-tv-ws-api
+
+# Pull latest changes
+git pull
+
+# Get the current commit SHA
+git log -1 --format="%H %s"
+
+# Copy the commit SHA and update the ARG in Dockerfile:
+# ARG SAMSUNG_API_COMMIT=<new-commit-sha>
+```
+
+**Why pin to a commit?**
+- Ensures reproducible builds across environments
+- Prevents unexpected breaking changes from upstream
+- Allows controlled testing of library updates
+- Makes rollbacks easier if issues arise
 
 ## License
 
