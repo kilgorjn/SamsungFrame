@@ -1,0 +1,21 @@
+version: '3.8'
+services:
+  samsung-frame-controller:
+    image: ghcr.io/kilgorjn/samsungframe:latest
+    container_name: samsung-frame-art-controller
+    ports:
+      - "8000:8000"
+    volumes:
+      - thumbnail-cache:/app/data/thumbnails
+    environment:
+      - TV_IP=${TV_IP:-192.168.86.25}
+      - TV_PORT=${TV_PORT:-8001}
+      - TV_TIMEOUT=${TV_TIMEOUT:-30}
+      - CACHE_TTL=${CACHE_TTL:-300}
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+    restart: unless-stopped
+
+volumes:
+  thumbnail-cache:
+    driver: local
