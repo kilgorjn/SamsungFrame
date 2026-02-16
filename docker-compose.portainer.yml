@@ -4,7 +4,7 @@ services:
     image: ghcr.io/kilgorjn/samsungframe:latest
     container_name: samsung-frame-art-controller
     ports:
-      - "8000:8000"
+      - "${API_PORT:-8000}:8000"
     volumes:
       - thumbnail-cache:/app/data/thumbnails
     environment:
