@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     # API Configuration
     api_host: str = "0.0.0.0"
     api_port: int = 8000
+    log_level: str = "INFO"
 
     # CORS Configuration
     cors_origins: list[str] = ["http://localhost:5173", "http://localhost:3000"]
