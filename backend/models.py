@@ -64,6 +64,7 @@ class TvSettingsResponse(BaseModel):
 
     brightness: Optional[str] = None
     color_temperature: Optional[str] = None
+    auto_brightness: Optional[bool] = None
 
 
 class MatteType(BaseModel):
@@ -100,6 +101,12 @@ class SetBrightnessRequest(BaseModel):
     """Model for set brightness request."""
 
     value: str  # "0" to "10"
+
+
+class SetAutoBrightnessRequest(BaseModel):
+    """Model for set auto brightness request."""
+
+    enabled: bool
 
 
 class SetColorTemperatureRequest(BaseModel):

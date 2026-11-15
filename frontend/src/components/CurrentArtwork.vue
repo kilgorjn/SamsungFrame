@@ -44,6 +44,7 @@
             type="range"
             v-model="brightness"
             @input="onBrightnessChange"
+            :disabled="autoBrightness"
             min="0"
             max="10"
             step="1"
@@ -52,6 +53,10 @@
           <span style="font-size: 20px;">☀️</span>
           <span style="min-width: 30px; text-align: center; font-weight: 600;">{{ brightness }}</span>
         </div>
+        <label style="display: flex; align-items: center; gap: 8px; margin-top: 12px; cursor: pointer;">
+          <input type="checkbox" v-model="autoBrightness" @change="onAutoBrightnessChange" />
+          Auto brightness (use the TV's light sensor)
+        </label>
         <p v-if="brightnessMessage" class="success" style="margin-top: 8px;">{{ brightnessMessage }}</p>
         <p v-if="brightnessError" class="error" style="margin-top: 8px;">{{ brightnessError }}</p>
       </div>
@@ -187,6 +192,7 @@ export default {
     const brightness = ref(5);
     const brightnessMessage = ref(null);
     const brightnessError = ref(null);
+    const autoBrightness = ref(false);
     let brightnessTimeout = null;
 
     // Color temperature state
@@ -297,8 +303,28 @@ export default {
         if (settings.brightness) {
           brightness.value = parseInt(settings.brightness);
         }
+        if (typeof settings.auto_brightness === 'boolean') {
+          autoBrightness.value = settings.auto_brightness;
+        }
       } catch (err) {
         console.error('Failed to load brightness:', err);
+      }
+    };
+
+    const onAutoBrightnessChange = async () => {
+      const enabled = autoBrightness.value;
+      brightnessMessage.value = null;
+      brightnessError.value = null;
+      try {
+        await samsungApi.setAutoBrightness(enabled);
+        brightnessMessage.value = `Auto brightness ${enabled ? 'on' : 'off'}`;
+        setTimeout(() => {
+          brightnessMessage.value = null;
+        }, 2000);
+      } catch (err) {
+        autoBrightness.value = !enabled;
+        brightnessError.value = 'Failed to change auto brightness';
+        console.error(err);
       }
     };
 
@@ -379,6 +405,8 @@ export default {
       brightnessMessage,
       brightnessError,
       onBrightnessChange,
+      autoBrightness,
+      onAutoBrightnessChange,
       colorTemp,
       colorTempMessage,
       colorTempError,
