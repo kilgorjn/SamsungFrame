@@ -185,6 +185,16 @@ class SamsungTVClient:
             logger.error(f"Error getting art mode status: {e}")
             return False
 
+    def get_art_settings(self) -> dict:
+        """Get all art mode settings in a single TV request, keyed by item name."""
+        try:
+            tv = self._get_tv()
+            items = tv.art().get_artmode_settings()
+            return {item['item']: item['value'] for item in items}
+        except Exception as e:
+            logger.error(f"Error getting art settings: {e}")
+            return {}
+
     def get_brightness(self) -> Optional[str]:
         """Get current brightness setting."""
         try:
