@@ -348,14 +348,13 @@ async def delete_artwork(content_id: str):
 async def get_tv_settings():
     """Get TV art mode settings (brightness, color temperature)."""
     try:
-        brightness = tv_client.get_brightness()
-        color_temp = tv_client.get_color_temperature()
-        auto_brightness = tv_client.get_auto_brightness()
+        art_settings = tv_client.get_art_settings()
+        sensor = art_settings.get('brightness_sensor_setting')
 
         return TvSettingsResponse(
-            brightness=brightness,
-            color_temperature=color_temp,
-            auto_brightness=auto_brightness
+            brightness=art_settings.get('brightness'),
+            color_temperature=art_settings.get('color_temperature'),
+            auto_brightness=None if sensor is None else str(sensor).lower() == 'on'
         )
     except Exception as e:
         logger.error(f"Error getting TV settings: {e}")

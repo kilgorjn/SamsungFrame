@@ -297,9 +297,12 @@ export default {
       }
     };
 
-    const loadBrightness = async () => {
+    const loadTvSettings = async () => {
       try {
         const settings = await samsungApi.getTvSettings();
+        if (settings.color_temperature) {
+          colorTemp.value = parseInt(settings.color_temperature);
+        }
         if (settings.brightness) {
           brightness.value = parseInt(settings.brightness);
         }
@@ -307,7 +310,7 @@ export default {
           autoBrightness.value = settings.auto_brightness;
         }
       } catch (err) {
-        console.error('Failed to load brightness:', err);
+        console.error('Failed to load TV settings:', err);
       }
     };
 
@@ -352,17 +355,6 @@ export default {
       }, 500);
     };
 
-    const loadColorTemperature = async () => {
-      try {
-        const settings = await samsungApi.getTvSettings();
-        if (settings.color_temperature) {
-          colorTemp.value = parseInt(settings.color_temperature);
-        }
-      } catch (err) {
-        console.error('Failed to load color temperature:', err);
-      }
-    };
-
     const onColorTempChange = () => {
       // Clear any existing timeout
       if (colorTempTimeout) {
@@ -388,10 +380,11 @@ export default {
     };
 
     onMounted(async () => {
-      await loadCurrentArtwork();
-      await loadMatteList();
-      await loadBrightness();
-      await loadColorTemperature();
+      // Run in parallel; the TV handles each request in roughly a second
+      await Promise.all([
+        loadCurrentArtwork().then(loadMatteList),
+        loadTvSettings(),
+      ]);
     });
 
     return {
