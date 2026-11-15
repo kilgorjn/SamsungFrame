@@ -194,6 +194,26 @@ class SamsungTVClient:
             logger.error(f"Error getting brightness: {e}")
             return None
 
+    def get_auto_brightness(self) -> Optional[bool]:
+        """Get whether automatic (sensor-based) brightness is enabled."""
+        try:
+            tv = self._get_tv()
+            data = tv.art().get_artmode_settings('brightness_sensor_setting')
+            return str(data['value']).lower() == 'on'
+        except Exception as e:
+            logger.error(f"Error getting auto brightness: {e}")
+            return None
+
+    def set_auto_brightness(self, enabled: bool) -> None:
+        """Enable or disable automatic (sensor-based) brightness."""
+        try:
+            tv = self._get_tv()
+            tv.art().set_brightness_sensor_setting("on" if enabled else "off")
+            logger.info(f"Set auto brightness to {'on' if enabled else 'off'}")
+        except Exception as e:
+            logger.error(f"Error setting auto brightness: {e}")
+            raise
+
     def get_color_temperature(self) -> Optional[str]:
         """Get current color temperature setting."""
         try:

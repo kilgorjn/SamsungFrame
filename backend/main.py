@@ -24,6 +24,7 @@ from models import (
     MatteColor,
     ChangeMatteRequest,
     SetBrightnessRequest,
+    SetAutoBrightnessRequest,
     SetColorTemperatureRequest,
     HealthResponse,
 )
@@ -349,10 +350,12 @@ async def get_tv_settings():
     try:
         brightness = tv_client.get_brightness()
         color_temp = tv_client.get_color_temperature()
+        auto_brightness = tv_client.get_auto_brightness()
 
         return TvSettingsResponse(
             brightness=brightness,
-            color_temperature=color_temp
+            color_temperature=color_temp,
+            auto_brightness=auto_brightness
         )
     except Exception as e:
         logger.error(f"Error getting TV settings: {e}")
@@ -391,6 +394,20 @@ async def change_matte(request: ChangeMatteRequest):
     except Exception as e:
         logger.error(f"Error changing matte: {e}")
         raise HTTPException(status_code=500, detail=f"Could not change matte: {str(e)}")
+
+
+@app.post("/api/art/auto-brightness")
+async def set_auto_brightness(request: SetAutoBrightnessRequest):
+    """Enable or disable automatic (sensor-based) brightness."""
+    try:
+        tv_client.set_auto_brightness(request.enabled)
+        return {
+            "success": True,
+            "auto_brightness": request.enabled
+        }
+    except Exception as e:
+        logger.error(f"Error setting auto brightness: {e}")
+        raise HTTPException(status_code=500, detail=f"Could not set auto brightness: {str(e)}")
 
 
 @app.post("/api/art/brightness")
